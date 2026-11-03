@@ -1,0 +1,27 @@
+# Place at: .github/workflows/prayer-slack.yml
+name: Prayer time Slack messages
+
+on:
+  schedule:
+    # 02:00 UTC = 08:00 Dhaka, Monday-Friday
+    - cron: "0 2 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Shudhu log dekhao, Slack-e schedule korbe na"
+        type: boolean
+        default: true
+
+jobs:
+  schedule-messages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node prayer-slack.mjs
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID }}
+          DRY_RUN: ${{ inputs.dry_run }}
