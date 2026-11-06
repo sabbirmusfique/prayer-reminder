@@ -70,11 +70,21 @@ messages.push({
   text: CONFIG.maghrib.text,
 });
 
+// Ajker already-scheduled messages (duplicate thekanor jonno)
+const list = await (await fetch("https://slack.com/api/chat.scheduledMessages.list", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${SLACK_TOKEN}`, "Content-Type": "application/json; charset=utf-8" },
+  body: JSON.stringify({ channel: CHANNEL }),
+})).json();
+if (!list.ok) throw new Error(`Slack list error: ${list.error}`);
+const already = new Set(list.scheduled_messages.map((m) => `${m.post_at}|${m.text}`));
+
 for (const msg of messages) {
   const postAt = midnightSec + msg.atMin * 60;
   const label = `${msg.name} -> message at ${fmt(msg.atMin)}: "${msg.text}"`;
 
   if (postAt <= nowSec + 60) { console.log(`SKIP (time passed) ${label}`); continue; }
+  if (already.has(`${postAt}|${msg.text}`)) { console.log(`SKIP (already scheduled) ${label}`); continue; }
   if (DRY_RUN) { console.log(`DRY RUN ${label}`); continue; }
 
   const out = await (await fetch("https://slack.com/api/chat.scheduleMessage", {
